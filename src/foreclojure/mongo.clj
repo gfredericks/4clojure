@@ -2,44 +2,71 @@
   (:use somnium.congomongo
         [foreclojure.data-set :only [load-problems]]
         [foreclojure.config   :only [config]]
+        [foreclojure.fake-mongo :only [the-db]]
         [foreclojure.problems :only [number-from-mongo-key solved-stats get-problem-list]]
         [foreclojure.users    :only [get-users]]))
 
 (defn connect-to-db []
-  (let [{:keys [db-user db-pwd db-host db-name]} config]
-    (mongo!
-     :host (or db-host "localhost")
-     :db   (or db-name "mydb"))
-    (when (and db-user db-pwd)
-      (authenticate db-user db-pwd))))
+  (let [f (java.io.File. "fake-db.clj")
+
+        data
+        (if (.exists f)
+          (-> f slurp read-string)
+          (do
+            (spit f "{}")
+            {}))]
+    (alter-var-root #'the-db
+                    (constantly
+                     (doto (atom data)
+                       (add-watch :saver (fn [_ _ _ new-val]
+                                           (spit f (pr-str new-val))))))))
+  ;; (let [{:keys [db-user db-pwd db-host db-name]} config]
+  ;;   (mongo!
+  ;;    :host (or db-host "localhost")
+  ;;    :db   (or db-name "mydb"))
+  ;;   (when (and db-user db-pwd)
+  ;;     (authenticate db-user db-pwd)))
+  )
+
+
 
 (defn prepare-problems []
-  (when-not (fetch-one :problems)
+  (when-not (:problems @the-db)
     (load-problems))
-  (add-index! :problems [:solved]))
+  ;; (when-not (fetch-one :problems)
+  ;;   (load-problems))
+  ;; (add-index! :problems [:solved])
+  )
 
 (defn prepare-seqs []
-  (update! :seqs
-           {:_id "problems"}
-           {:$set {:seq (->> (fetch :problems :only [:_id])
-                             (map :_id)
-                             (apply max)
-                             (inc))}}))
+  ;; I think this is ignorable
+
+  ;; (update! :seqs
+  ;;          {:_id "problems"}
+  ;;          {:$set {:seq (->> (fetch :problems :only [:_id])
+  ;;                            (map :_id)
+  ;;                            (apply max)
+  ;;                            (inc))}})
+  )
 
 ;; make it easier to get off the ground by marking contributors automatically
 ;; useful since some "in-development" features aren't enabled for all users
 (defn prepare-users []
-  (add-index! :users [:user] :unique true)
-  (add-index! :users [[:solved -1]])
-  (add-index! :users [:email])
-  (update! :users
-           {:user {:$in (:contributors config)}}
-           {:$set {:contributor true}}
-           :upsert false
-           :multiple true))
+  ;; Don't think we need this either
+
+  ;; (add-index! :users [:user] :unique true)
+  ;; (add-index! :users [[:solved -1]])
+  ;; (add-index! :users [:email])
+  ;; (update! :users
+  ;;          {:user {:$in (:contributors config)}}
+  ;;          {:$set {:contributor true}}
+  ;;          :upsert false
+  ;;          :multiple true)
+  )
 
 (defn prepare-solutions []
-  (add-index! :solutions [:user :problem]))
+  ;; (add-index! :solutions [:user :problem])
+  )
 
 (defn reconcile-solved-count
   "Overwrites the times-solved field in the problems collection based on data from the users collection. Should only be called on server startup since it isn't a safe operation. Also updates the total-solved agent."

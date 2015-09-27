@@ -1,6 +1,6 @@
 (ns foreclojure.mongo
-  (:use somnium.congomongo
-        [foreclojure.data-set :only [load-problems]]
+  (:require [foreclojure.fake-mongo :as fake-mongo])
+  (:use [foreclojure.data-set :only [load-problems]]
         [foreclojure.config   :only [config]]
         [foreclojure.fake-mongo :only [the-db]]
         [foreclojure.problems :only [number-from-mongo-key solved-stats get-problem-list]]
@@ -52,6 +52,7 @@
 ;; make it easier to get off the ground by marking contributors automatically
 ;; useful since some "in-development" features aren't enabled for all users
 (defn prepare-users []
+  (swap! the-db assoc :users {})
   ;; Don't think we need this either
 
   ;; (add-index! :users [:user] :unique true)
@@ -75,7 +76,7 @@
         [raw-scores raw-solved] (for [field [:scores :solved]]
                                   ;; we fetch two separate collections so that it's easy to iterate
                                   ;; over it twice without holding onto the head on the first pass
-                                  (mapcat field (fetch :users :only [:scores :solved])))
+                                  (mapcat field (fake-mongo/all-records :users)))
         scores (->> raw-scores
                     (frequencies)
                     (reduce (fn [scores [[id score] times]]

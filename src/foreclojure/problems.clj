@@ -1,5 +1,6 @@
 (ns foreclojure.problems
   (:require [foreclojure.users        :as      users]
+            [foreclojure.fake-mongo   :as      fake-mongo]
             [noir.session             :as      session]
             [clojure.string           :as      s]
             [ring.util.response       :as      response]
@@ -25,17 +26,24 @@
 (def solved-stats (agent {:total 0}))
 
 (defn get-problem [x]
-  (from-mongo
-   (fetch-one :problems :where {:_id x})))
+  (fake-mongo/get-by-id :problems x)
+  ;; (from-mongo
+  ;;  (fetch-one :problems :where {:_id x}))
+  )
 
 (defn get-problem-list
   ([] (get-problem-list {:approved true}))
   ([criteria]
-     (from-mongo
-      (fetch :problems
-             :only [:_id :title :difficulty :tags :user]
-             :where criteria
-             :sort {:_id 1}))))
+   (assert (= {:approved true} criteria))
+   (->> (fake-mongo/all-records :problems)
+        (filter :approved)
+        (sort-by :_id))
+     ;; (from-mongo
+     ;;  (fetch :problems
+     ;;         :only [:_id :title :difficulty :tags :user]
+     ;;         :where criteria
+     ;;         :sort {:_id 1}))
+     ))
 
 (defn next-unsolved-problem [solved-problems just-solved-id]
   (when-let [unsolved (seq

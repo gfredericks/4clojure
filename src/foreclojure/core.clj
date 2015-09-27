@@ -55,7 +55,7 @@
          #(wrap-reload % '(foreclojure.core))
          identity))
       session/wrap-noir-flash
-      (session/wrap-noir-session {:store (mongo-session :sessions)})
+      (session/wrap-noir-session {})
       wrap-request-bindings
       handler/site
       wrap-strip-trailing-slash))

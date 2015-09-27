@@ -160,10 +160,12 @@
 
 (defn user-attribute [attr]
   (fn [username]
-    (attr (from-mongo
-           (fetch-one :users
-                      :where {:user username}
-                      :only [attr])))))
+    nil ;; TODO?
+    ;; (attr (from-mongo
+    ;;        (fetch-one :users
+    ;;                   :where {:user username}
+    ;;                   :only [attr])))
+    ))
 
 (def get-solved (comp set (user-attribute :solved)))
 (def approver? (user-attribute :approver))

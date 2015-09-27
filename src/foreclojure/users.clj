@@ -2,6 +2,7 @@
   (:require [ring.util.response       :as response]
             [clojure.string           :as string]
             [noir.session             :as session]
+            [foreclojure.fake-mongo   :as fake-mongo]
             [cheshire.core            :as json])
   (:use     [foreclojure.utils        :only [from-mongo row-class rank-class get-user if-user with-user]]
             [foreclojure.template     :only [def-page content-page]]
@@ -20,10 +21,12 @@
                          [:golfer])))
 
 (defn get-user-id [name]
-  (:_id
-   (fetch-one :users
-              :where {:user name}
-              :only [:_id])))
+  (:_id (first (fake-mongo/get-by :users :user name)))
+  ;; (:_id
+  ;;  (fetch-one :users
+  ;;             :where {:user name}
+  ;;             :only [:_id]))
+  )
 
 (defn get-users []
   (from-mongo
@@ -303,8 +306,8 @@
 (defroutes users-routes
   (GET  "/users" [] (top-users-page))
   (GET  "/users/all" [] (all-users-page))
-  (GET  "/user/:username" [username] 
-    (if (nil? (get-user username)) 
+  (GET  "/user/:username" [username]
+    (if (nil? (get-user username))
       {:status 404 :headers {"Content-Type" "text/plain"} :body "Error: This user does not exist, nice try though."}
       (user-profile username)))
   (POST "/user/follow/:username" [username] (static-follow-user username true))

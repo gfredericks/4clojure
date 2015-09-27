@@ -23,4 +23,6 @@
   :checksum-deps true
   :main foreclojure.core
   :ring {:handler foreclojure.core/app
-         :init foreclojure.mongo/prepare-mongo})
+         :init foreclojure.mongo/prepare-mongo
+         :bind "0.0.0.0"
+         :port 9090})

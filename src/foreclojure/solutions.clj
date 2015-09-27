@@ -1,5 +1,6 @@
 (ns foreclojure.solutions
-  (:require [clojure.string      :as   s])
+  (:require [clojure.string      :as   s]
+            [foreclojure.fake-mongo   :as fake-mongo])
   (:use     [somnium.congomongo  :only [fetch-one update!]]
             [useful.debug        :only [?]]
             [foreclojure.messages :only [err-msg]]))
@@ -12,16 +13,18 @@
                                                 :only [:hide-solutions]))))
        (get-solution user-id problem-id)))
   ([user-id problem-id]
-     (or (:code (fetch-one :solutions
-                           :where {:user user-id
-                                   :problem problem-id}))
-         (let [{:keys [scores solved]}
-               (fetch-one :users
-                          :where {:_id user-id}
-                          :only [(keyword (str "scores." problem-id))
-                                 :solved])]
-           (cond (seq scores) (err-msg "solution.scored-early" (first (vals scores))),
-                 (some #{problem-id} solved) (err-msg "solution.solved-early"))))))
+   (:code (first (fake-mongo/get-by :solutions :user user-id :problem problem-id)))
+     ;; (or (:code (fetch-one :solutions
+     ;;                       :where {:user user-id
+     ;;                               :problem problem-id}))
+     ;;     (let [{:keys [scores solved]}
+     ;;           (fetch-one :users
+     ;;                      :where {:_id user-id}
+     ;;                      :only [(keyword (str "scores." problem-id))
+     ;;                             :solved])]
+     ;;       (cond (seq scores) (err-msg "solution.scored-early" (first (vals scores))),
+     ;;             (some #{problem-id} solved) (err-msg "solution.solved-early"))))
+     ))
 
 (defn save-solution [user-id problem-id code]
   (update! :solutions

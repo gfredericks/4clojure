@@ -7,19 +7,6 @@
         [foreclojure.users    :only [get-users]]))
 
 (defn connect-to-db []
-  (let [f (java.io.File. "fake-db.clj")
-
-        data
-        (if (.exists f)
-          (-> f slurp read-string)
-          (do
-            (spit f "{}")
-            {}))]
-    (alter-var-root #'the-db
-                    (constantly
-                     (doto (atom data)
-                       (add-watch :saver (fn [_ _ _ new-val]
-                                           (spit f (pr-str new-val))))))))
   ;; (let [{:keys [db-user db-pwd db-host db-name]} config]
   ;;   (mongo!
   ;;    :host (or db-host "localhost")
@@ -52,7 +39,6 @@
 ;; make it easier to get off the ground by marking contributors automatically
 ;; useful since some "in-development" features aren't enabled for all users
 (defn prepare-users []
-  (swap! the-db assoc :users {})
   ;; Don't think we need this either
 
   ;; (add-index! :users [:user] :unique true)

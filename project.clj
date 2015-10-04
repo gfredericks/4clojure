@@ -17,10 +17,12 @@
                  [incanter/incanter-charts "1.3.0"]
                  [commons-lang "2.6"]
                  [org.apache.commons/commons-email "1.2"]
-                 [org.clojure/data.xml "0.0.5"]]
+                 [org.clojure/data.xml "0.0.5"]
+                 [com.gfredericks/webscale "0.1.0"]]
   :plugins [[lein-ring "0.7.1"]]
   :profiles {:dev {:dependencies [[midje "1.3.0" :exclusions [org.clojure/clojure]]]}}
   :checksum-deps true
+  :jvm-opts ["-Djava.security.policy=java-security-policy-file"]
   :main foreclojure.core
   :ring {:handler foreclojure.core/app
          :init foreclojure.mongo/prepare-mongo

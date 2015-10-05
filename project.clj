@@ -21,6 +21,7 @@
   :plugins [[lein-ring "0.7.1"]]
   :profiles {:dev {:dependencies [[midje "1.3.0" :exclusions [org.clojure/clojure]]]}}
   :checksum-deps true
+  :jvm-opts ["-Djava.security.policy=java-security-policy-file"]
   :main foreclojure.core
   :ring {:handler foreclojure.core/app
          :init foreclojure.mongo/prepare-mongo})

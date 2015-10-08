@@ -1,6 +1,15 @@
 (ns foreclojure.fake-mongo
   (:require [com.gfredericks.webscale :as webscale]))
 
+(defn ^:private bad-get-uuids
+  "Don't use this haha."
+  [seed]
+  (let [r (java.util.Random. seed)]
+    (->> (repeatedly #(.nextLong r))
+         (partition 2)
+         (map (fn [[x1 x2]]
+                (java.util.UUID. x1 x2))))))
+
 (defn ^:private compile-where-map
   "Returns a predicate."
   [where-map]
@@ -39,58 +48,50 @@
 
              (throw (Exception. "WTF??"))))))
 
-(defmulti ^:private update-state
+(defmulti ^:private update-state*
   (fn [state ev]
     (:type ev)))
 
-(defn bad-next-uuid
-  [seed]
-  (let [r (java.util.Random. seed)
-        [x1 x2 x3] (repeatedly #(.nextLong r))]
-    [(java.util.UUID. x1 x2) x3]))
 
-(defmethod update-state :insert
+(defmethod update-state* :insert
   [state {:keys [table doc]}]
-  (let [{:keys [::seed]} state
-        [id next-seed] (bad-next-uuid seed)
+  (let [id (-> state ::ev-num bad-get-uuids first)
         doc (update doc :_id #(or % (str id)))]
-    (-> state
-        (assoc ::seed next-seed)
-        (assoc-in [table (:_id doc)] doc))))
+    (assoc-in state [table (:_id doc)] doc)))
 
-(defmethod update-state :update
+(defmethod update-state* :update
   [state {:keys [table where actions opts] :as arg}]
   (let [pred (compile-where-map where)
         func (compile-actions actions)
         {:keys [upsert multiple]} opts
-        {:keys [::seed]} state
-        [random-id next-seed] (bad-next-uuid seed)
+        random-uuids (bad-get-uuids (::ev-num state))]
+    (update state table
+            (fn [recs]
+              (let [[new-recs matched]
+                    (reduce (fn [[new-recs matched] id]
+                              (let [rec (get new-recs id)]
+                                (if (pred rec)
+                                  [(update new-recs id func) (inc matched)]
+                                  [new-recs matched])))
+                            [recs 0]
+                            (keys recs))]
+                (when (and (not multiple) (< 1 matched))
+                  (throw (ex-info "Multiple matches!"
+                                  {:arg arg})))
+                (if (and (zero? matched)
+                         upsert)
+                  (let [new-id (first random-uuids)]
+                    (assoc new-recs new-id (func {:_id new-id})))
+                  new-recs))))))
 
-        new-state
-        (update state table
-                (fn [recs]
-                  (let [[new-recs matched]
-                        (reduce (fn [[new-recs matched] id]
-                                  (let [rec (get new-recs id)]
-                                    (if (pred rec)
-                                      [(update new-recs id func) (inc matched)]
-                                      [new-recs matched])))
-                                [recs 0]
-                                (keys recs))]
-                    (when (and (not multiple) (< 1 matched))
-                      (throw (ex-info "Multiple matches!"
-                                      {:arg arg})))
-                    (if (and (zero? matched)
-                             upsert)
-                      (let [new-id (java.util.UUID/randomUUID)]
-                        (assoc new-recs new-id (func {:_id new-id})))
-                      new-recs))))]
-    (cond-> new-state
-      (get-in new-state [table random-id])
-      (assoc ::seed next-seed))))
+(defn update-state
+  [state ev]
+  (-> state
+      (update-state* ev)
+      (update ::ev-num inc)))
 
 (def ^:private the-db
-  (webscale/create update-state {::seed 42} "fake-mongo"))
+  (webscale/create update-state {::ev-num 0} "fake-mongo"))
 
 (defn ^:private records
   [table]

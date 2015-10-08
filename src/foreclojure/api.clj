@@ -3,7 +3,7 @@
   (:use     [foreclojure.ring :only [wrap-json wrap-debug]]
             [foreclojure.utils :only [as-int]]
             [compojure.core :only [routes GET]]
-            [somnium.congomongo       :only    [fetch-one]]
+            [foreclojure.fake-mongo   :only    [fetch-one]]
             [useful.map :only [update-each]]))
 
 (def api-routes

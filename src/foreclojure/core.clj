@@ -55,7 +55,8 @@
          #(wrap-reload % '(foreclojure.core))
          identity))
       session/wrap-noir-flash
-      (session/wrap-noir-session {:store (mongo-session :sessions)})
+      ;; can make the session persistent via fake-mongo
+      (session/wrap-noir-session {#_#_:store (mongo-session :sessions)})
       wrap-request-bindings
       handler/site
       wrap-strip-trailing-slash))

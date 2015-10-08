@@ -1,6 +1,6 @@
 (ns foreclojure.solutions
   (:require [clojure.string      :as   s])
-  (:use     [somnium.congomongo  :only [fetch-one update!]]
+  (:use     [foreclojure.fake-mongo  :only [fetch-one update!]]
             [useful.debug        :only [?]]
             [foreclojure.messages :only [err-msg]]))
 

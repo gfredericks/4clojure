@@ -7,7 +7,7 @@
             [foreclojure.utils        :only [form-row assuming flash-error plausible-email?]]
             [foreclojure.template     :only [def-page]]
             [foreclojure.messages     :only [err-msg]]
-            [somnium.congomongo       :only [insert! fetch-one]]))
+            [foreclojure.fake-mongo   :only [insert! fetch-one]]))
 
 (def-page register-page []
   {:title "4clojure &ndash; Register"

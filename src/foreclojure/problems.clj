@@ -15,7 +15,7 @@
             [foreclojure.solutions    :only    [save-solution get-solution]]
             [clojail.core             :exclude [safe-read]]
             [clojail.testers          :only    [secure-tester blacklist-symbols]]
-            [somnium.congomongo       :only    [update! fetch-one fetch fetch-and-modify destroy!]]
+            [foreclojure.fake-mongo   :only    [update! fetch-one fetch fetch-and-modify destroy!]]
             [hiccup.form              :only    [form-to text-area hidden-field label text-field drop-down]]
             [hiccup.element           :only    [link-to]]
             [hiccup.core              :only    [html]]

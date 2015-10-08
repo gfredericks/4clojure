@@ -6,7 +6,7 @@
             [foreclojure.utils        :only [escape-html]]
             [compojure.core           :only [defroutes GET]]
             [hiccup.element           :only [link-to]]
-            [somnium.congomongo       :only [fetch-one]]))
+            [foreclojure.fake-mongo   :only [fetch-one]]))
 
 (defn throttled
   "Create a version of a function which 'refuses' to be called too

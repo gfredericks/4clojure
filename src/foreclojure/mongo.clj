@@ -1,5 +1,5 @@
 (ns foreclojure.mongo
-  (:use somnium.congomongo
+  (:use foreclojure.fake-mongo
         [foreclojure.data-set :only [load-problems]]
         [foreclojure.config   :only [config]]
         [foreclojure.problems :only [number-from-mongo-key solved-stats get-problem-list]]

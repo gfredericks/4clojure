@@ -15,7 +15,7 @@
             [hiccup.element           :only [link-to]]
             [hiccup.form              :only [label]]
             [useful.fn                :only [to-fix]]
-            [somnium.congomongo       :only [fetch-one]]
+            [foreclojure.fake-mongo   :only [fetch-one]]
             [foreclojure.ring-utils   :only [*url* static-url]]
             [foreclojure.config       :only [config repo-url]]))
 

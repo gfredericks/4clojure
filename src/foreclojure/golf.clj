@@ -7,7 +7,7 @@
             [foreclojure.template     :only [def-page content-page]]
             [foreclojure.users        :only [golfer?]]
             [compojure.core           :only [defroutes POST GET]]
-            [somnium.congomongo       :only [update!]]))
+            [foreclojure.fake-mongo   :only [update!]]))
 
 (def-page golfer-page []
   "Your preferences have been saved.")

@@ -7,7 +7,7 @@
             [foreclojure.template     :only [def-page content-page]]
             [foreclojure.ring-utils   :only [*http-scheme* universal-url]]
             [foreclojure.config       :only [config repo-url]]
-            [somnium.congomongo       :only [fetch-one fetch update!]]
+            [foreclojure.fake-mongo   :only [fetch-one fetch update!]]
             [compojure.core           :only [defroutes GET POST]]
             [hiccup.form              :only [form-to hidden-field]]
             [hiccup.element           :only [link-to]]

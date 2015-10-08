@@ -12,7 +12,7 @@
             [useful.map               :only [keyed]]
             [clojail.core             :only [thunk-timeout]]
             [clojure.stacktrace       :only [print-cause-trace]]
-            [somnium.congomongo       :only [update! fetch-one]]))
+            [foreclojure.fake-mongo   :only [update! fetch-one]]))
 
 (defn account-settings-box [user email]
   (list

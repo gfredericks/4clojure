@@ -1,5 +1,5 @@
 (ns foreclojure.data-set
-  (:use [somnium.congomongo]))
+  (:use [foreclojure.fake-mongo]))
 
 (defn load-problems []
   (do

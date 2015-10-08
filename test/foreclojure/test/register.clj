@@ -6,7 +6,7 @@
   (:use [clojure.test])
   (:use [midje.sweet])
   (:use [foreclojure.utils :only [form-row assuming flash-error]])
-  (:use [somnium.congomongo :only [insert! fetch-one]]))
+  (:use [foreclojure.fake-mongo :only [insert! fetch-one]]))
 
 
 

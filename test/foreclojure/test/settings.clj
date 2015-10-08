@@ -7,7 +7,7 @@
   (:use [clojure.test])
   (:use [midje.sweet])
   (:use [foreclojure.utils :only [get-user assuming flash-error flash-msg default-theme]])
-  (:use [somnium.congomongo :only [update! fetch-one]]))
+  (:use [foreclojure.fake-mongo :only [update! fetch-one]]))
   
 
 

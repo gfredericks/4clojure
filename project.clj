@@ -5,7 +5,6 @@
                  [hiccup "1.0.0"]
                  [clojail "1.0.6"]
                  [lib-noir "0.1.1"]
-                 [congomongo "0.1.9"]
                  [org.jasypt/jasypt "1.7"]
                  [cheshire "4.0.0"]
                  [useful "0.8.3-alpha4"]

@@ -48,23 +48,21 @@
 
              (throw (Exception. "WTF??"))))))
 
-(defmulti ^:private update-state*
+(defmulti ^:private update-state
   (fn [state ev]
     (:type ev)))
 
 
-(defmethod update-state* :insert
+(defmethod update-state :insert
   [state {:keys [table doc]}]
-  (let [id (-> state ::ev-num bad-get-uuids first)
-        doc (update doc :_id #(or % (str id)))]
-    (assoc-in state [table (:_id doc)] doc)))
+  (assert (:_id doc))
+  (assoc-in state [table (:_id doc)] doc))
 
-(defmethod update-state* :update
-  [state {:keys [table where actions opts] :as arg}]
+(defmethod update-state :update
+  [state {:keys [table where actions opts random-id] :as arg}]
   (let [pred (compile-where-map where)
         func (compile-actions actions)
-        {:keys [upsert multiple]} opts
-        random-uuids (bad-get-uuids (::ev-num state))]
+        {:keys [upsert multiple]} opts]
     (update state table
             (fn [recs]
               (let [[new-recs matched]
@@ -80,12 +78,12 @@
                                   {:arg arg})))
                 (if (and (zero? matched)
                          upsert)
-                  (let [new-id (or (:_id where) (first random-uuids))
+                  (let [new-id (or (:_id where) random-id)
                         new-rec (assoc where :_id new-id)]
                     (assoc new-recs new-id (func new-rec)))
                   new-recs))))))
 
-(defmethod update-state* :delete
+(defmethod update-state :delete
   [state {:keys [table where]}]
   (let [pred (compile-where-map where)]
     (update state table
@@ -97,14 +95,8 @@
                       recs
                       recs)))))
 
-(defn update-state
-  [state ev]
-  (-> state
-      (update-state* ev)
-      (update ::ev-num inc)))
-
 (def ^:private the-db
-  (webscale/create update-state {::ev-num 0} "fake-mongo"))
+  (webscale/create update-state {} "fake-mongo"))
 
 (defn ^:private records
   [table]
@@ -115,7 +107,7 @@
   (webscale/update! the-db
                     {:type :insert
                      :table table
-                     :doc doc})
+                     :doc (update doc :_id #(or % (str (java.util.UUID/randomUUID))))})
   :ok)
 
 (defn update!
@@ -123,11 +115,14 @@
   {:pre [(every? #{:$set :$addToSet} (keys actions))
          (every? #{:upsert :multiple} (keys opts))]}
   (webscale/update! the-db
-                    {:type :update
-                     :table table
-                     :where where-map
-                     :actions actions
-                     :opts opts}))
+                    (cond->
+                        {:type :update
+                         :table table
+                         :where where-map
+                         :actions actions
+                         :opts opts}
+                      (:upsert opts)
+                      (assoc :random-id (str (java.util.UUID/randomUUID))))))
 
 (defn destroy!
   [table where-map]

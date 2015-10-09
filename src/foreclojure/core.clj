@@ -2,6 +2,7 @@
   (:require [compojure.route            :as   route]
             [compojure.handler          :as   handler]
             [foreclojure.config         :as   config]
+            [foreclojure.fake-mongo     :as   fake-mongo]
             [noir.session               :as   session])
   (:import  [java.lang                  OutOfMemoryError])
   (:use     [compojure.core             :only [defroutes routes GET]]
@@ -26,8 +27,7 @@
             [ring.middleware.reload     :only [wrap-reload]]
             [ring.middleware.stacktrace :only [wrap-stacktrace]]
             [ring.middleware.file-info  :only [wrap-file-info]]
-            [ring.middleware.gzip       :only [wrap-gzip]]
-            [mongo-session.core         :only [mongo-session]]))
+            [ring.middleware.gzip       :only [wrap-gzip]]))
 
 (def ^:dynamic *block-server* false)
 
@@ -55,8 +55,7 @@
          #(wrap-reload % '(foreclojure.core))
          identity))
       session/wrap-noir-flash
-      ;; can make the session persistent via fake-mongo
-      (session/wrap-noir-session {#_#_:store (mongo-session :sessions)})
+      (session/wrap-noir-session {:store fake-mongo/ring-session-store})
       wrap-request-bindings
       handler/site
       wrap-strip-trailing-slash))

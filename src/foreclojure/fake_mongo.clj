@@ -80,9 +80,22 @@
                                   {:arg arg})))
                 (if (and (zero? matched)
                          upsert)
-                  (let [new-id (first random-uuids)]
-                    (assoc new-recs new-id (func {:_id new-id})))
+                  (let [new-id (or (:_id where) (first random-uuids))
+                        new-rec (assoc where :_id new-id)]
+                    (assoc new-recs new-id (func new-rec)))
                   new-recs))))))
+
+(defmethod update-state* :delete
+  [state {:keys [table where]}]
+  (let [pred (compile-where-map where)]
+    (update state table
+            (fn [recs]
+              (reduce (fn [recs [id rec]]
+                        (cond-> recs
+                          (pred rec)
+                          (dissoc id)))
+                      recs
+                      recs)))))
 
 (defn update-state
   [state ev]
@@ -115,6 +128,13 @@
                      :where where-map
                      :actions actions
                      :opts opts}))
+
+(defn destroy!
+  [table where-map]
+  (webscale/update! the-db
+                    {:type :delete
+                     :table table
+                     :where where-map}))
 
 (defmacro ^:private stubs
   [& names]
@@ -164,3 +184,18 @@
                                (prn data)
                                (println (.getMessage t))
                                (throw (ex-info msg data t)))))))))
+
+(def ring-session-store
+  (reify ring.middleware.session.store/SessionStore
+    (read-session [store key]
+      (or (:data (fetch-one ::sessions :where {:_id key}))
+          {}))
+    (write-session [store key data]
+      (let [key (or key (str (java.util.UUID/randomUUID)))]
+        (update! ::sessions {:_id key}
+                 {:$set {:data data}}
+                 :upsert true)
+        key))
+    (delete-session [store key]
+      (destroy! ::sessions {:_id key})
+      nil)))

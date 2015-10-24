@@ -176,6 +176,11 @@
         (doall (take-while (complement #{end})
                            (repeatedly #(read *in* false end))))))))
 
+(def generators-namespace
+  (-> 'foreclojure.test-check-generators
+      (doto require)
+      (the-ns)))
+
 (defn run-code
   "Run the specified code-string against the test cases for the problem with the
 specified id.
@@ -197,7 +202,8 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
                                            first)
                                       sb-tester
                                       {#'*out* devnull
-                                       #'*err* devnull})
+                                       #'*err* devnull
+                                       #'*ns* generators-namespace})
                           "You failed the unit tests")
                         (catch Throwable t (.getMessage t)))))
           [passed [fail-msg]] (split-with nil? results)]

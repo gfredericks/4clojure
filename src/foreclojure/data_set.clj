@@ -140,7 +140,8 @@
              ]
     }
 
-   {:description "Create a generator of vectors of lists of pairs of maps from ints to ints and keywords, e.g. [([{2 3, 54 1} :heyo] [{} :what]) () ([{-1 1} :a-keyword])]"
+   {:title "Do I really have to do this one?"
+    :description "Create a generator of vectors of lists of pairs of maps from ints to ints and keywords, e.g. [([{2 3, 54 1} :heyo] [{} :what]) () ([{-1 1} :a-keyword])]"
     :tests '[(->> (gen/sample __ 1000)
                   (every? vector?))
              (->> (gen/sample __ 1000)
@@ -174,7 +175,19 @@
                   (every? string?))
              (->> (gen/sample __ 1000)
                   (map #(Long/parseLong %))
-                  (every? integer?))]}])
+                  (every? integer?))]}
+
+   {:title "It's sort of like the matrix"
+    :description "Create a generator of vectors of vectors of integers, where the inner vectors are all the same size."
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? (fn [v]
+                            (and (vector? v)
+                                 (every? vector? v)
+                                 (every? integer? (apply concat v))))))
+             (->> (gen/sample __ 1000)
+                  (every? (fn [v]
+                            (or (empty? v)
+                                (apply = (map count v))))))]}])
 
 (defn read-source
   [filepath {:keys [line column]}]

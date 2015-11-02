@@ -286,6 +286,19 @@
     :good-answers '[(gen/fmap #(* % 2) gen/int)]
     :bad-answers '[(gen/return 42)
                    (gen/such-that even? gen/int)]}
+   {:title "Three-valued logic"
+    :description "Create a generator that generates booleans and nil, roughly equally often."
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? #(contains? #{true false nil} %)))
+             (->> (gen/sample __ 1000)
+                  ;; Decent distribution
+                  (frequencies)
+                  (vals)
+                  (every? #(< 250 % 400)))]
+    :good-answers '[(gen/elements [true false nil])]
+    :bad-answers '[(gen/return true)
+                   (gen/return nil)
+                   (gen/elements [true false nil 42])]}
    {:title "[INSERT CLEVER PROBLEM TITLE]"
     :description "Create a generator that sometimes generates keywords and sometimes generates pairs of booleans."
     :tags ["combinators"]

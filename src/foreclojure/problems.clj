@@ -181,11 +181,7 @@
       (doto require)
       (the-ns)))
 
-(defn run-code
-  "Run the specified code-string against the test cases for the problem with the
-specified id.
-
-Return a map, {:message, :error, :url, :num-tests-passed}."
+(defn run-code*
   [id code]
   (try
     (let [{:keys [tests restricted] :as problem} (get-problem id)
@@ -209,10 +205,21 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
           [passed [fail-msg]] (split-with nil? results)]
       (assoc (if fail-msg
                {:message "", :error fail-msg, :url *url*}
-               (mark-completed problem code))
+               {})
         :num-tests-passed (count passed)))
     (catch Throwable t {:message "" :error (.getMessage t), :url *url*
                         :num-tests-passed 0})))
+
+(defn run-code
+  "Run the specified code-string against the test cases for the problem with the
+specified id.
+
+Return a map, {:message, :error, :url, :num-tests-passed}."
+  [id code]
+  (let [res (run-code* id code)]
+    (if (:error res)
+      res
+      (merge (mark-completed (get-problem id) code) res))))
 
 (defn static-run-code [id code]
   (session/flash-put! :code code)

@@ -97,6 +97,51 @@
                    (gen/elements [:foo :bar :baz :booze])
                    (gen/return :foo)
                    gen/keyword]}
+   {:title "Three-valued logic"
+    :description "Create a generator that generates booleans and nil."
+    :tags ["simple" "extra-credit"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (set)
+                  (= #{true false nil}))
+             (->> (gen/sample __ 1000)
+                  ;; Decent distribution
+                  (frequencies)
+                  (vals)
+                  (every? #(< 200 % 600)))]
+    :good-answers '[(gen/elements [true false nil])
+                    (gen/one-of [gen/boolean (gen/return nil)])]
+    :bad-answers '[(gen/return true)
+                   (gen/return nil)
+                   (gen/elements [true false nil 42])]}
+   {:title "Goes up to eleven"
+    :description "Create a generator that generates the full range of integers between -111111111 and 111111111, inclusive."
+    :tags ["simple" "extra-credit"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? #(and (integer? %) (<= -111111111 % 111111111))))
+             (let [xs (gen/sample __ 1000)]
+               ;; distributed evenly
+               (every? (fn [prime]
+                         (and (->> xs
+                                   (map #(mod % prime))
+                                   (distinct)
+                                   (count)
+                                   (= prime))
+                              (let [block-size (/ 222222223 prime)]
+                                (->> xs
+                                     (map #(-> %
+                                               (+ 111111111)
+                                               (/ block-size)
+                                               (int)))
+                                     (distinct)
+                                     (count)
+                                     (= prime)))))
+                       [7 11 13 17 23]))]
+    :good-answers '[(gen/choose -111111111 111111111)]
+    :bad-answers '[(gen/return 42)
+                   (gen/choose 0 222222222)
+                   (gen/choose -111111111 11111111)
+                   (gen/choose -111111111 1111111111)
+                   gen/int gen/nat gen/pos-int gen/s-pos-int]}
 
    ;;
    ;; Data structure generators
@@ -246,7 +291,7 @@
 
    {:title "Do I really have to do this one?"
     :description "Create a generator of vectors of lists of pairs of maps from ints to ints and keywords, e.g. [([{2 3, 54 1} :heyo] [{} :what]) () ([{-1 1} :a-keyword])]"
-    :tags ["collections" "bonus"]
+    :tags ["collections" "extra-credit"]
     :tests '[(->> (gen/sample (gen/scale #(min % 15) __) 100)
                   (every? vector?))
              (->> (gen/sample (gen/scale #(min % 15) __) 100)
@@ -272,41 +317,27 @@
    ;;
    ;; Combinator generators
    ;;
-   {:title "Even numbers!"
-    :description "Create a generator that generates even numbers."
+   {:title "Numbers that can't even"
+    :description "Create a generator that generates odd numbers."
     :tags ["combinators"]
     :tests '[(->> (gen/sample __ 1000)
                   (every? integer?))
              (->> (gen/sample __ 1000)
-                  (every? even?))
+                  (every? odd?))
              (->> (gen/sample __ 1000)
                   (distinct)
                   (count)
                   (< 50))]
-    :good-answers '[(gen/fmap #(* % 2) gen/int)]
-    :bad-answers '[(gen/return 42)
-                   (gen/such-that even? gen/int)]}
-   {:title "Three-valued logic"
-    :description "Create a generator that generates booleans and nil, roughly equally often."
-    :tests '[(->> (gen/sample __ 1000)
-                  (every? #(contains? #{true false nil} %)))
-             (->> (gen/sample __ 1000)
-                  ;; Decent distribution
-                  (frequencies)
-                  (vals)
-                  (every? #(< 250 % 400)))]
-    :good-answers '[(gen/elements [true false nil])]
-    :bad-answers '[(gen/return true)
-                   (gen/return nil)
-                   (gen/elements [true false nil 42])]}
-   {:title "[INSERT CLEVER PROBLEM TITLE]"
+    :good-answers '[(gen/fmap #(inc (* % 2)) gen/int)]
+    :bad-answers '[(gen/return 43)
+                   (gen/such-that odd? gen/int)]}
+   {:title "[TODO: COME UP WITH CLEVER PROBLEM TITLE]"
     :description "Create a generator that sometimes generates keywords and sometimes generates pairs of booleans."
     :tags ["combinators"]
     :tests '[(->> (gen/sample __ 1000)
                   (every? (fn [x] (or (keyword? x)
                                       (and (vector? x)
-                                           (= 2 (count x))
-                                           (every? #(instance? Boolean %) x))))))
+                                           (= [Boolean Boolean] (map class x)))))))
              (->> (gen/sample __ 1000)
                   ;; Generates each type roughly equally often
                   (map type)
@@ -376,6 +407,43 @@
                     (fn [[xs x]] (some #{x} xs))
                     (gen/tuple (gen/list gen/nat) gen/nat))]}
 
+   {:title "Make sure the deck is completely shuffled"
+    :description "Create a generator of shuffled card decks, where a card is a number from 1 to 52 inclusive."
+    :tags ["combinators"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? (fn [xs]
+                            (and (sequential? xs)
+                                 (= (range 1 53) (sort xs))))))
+             (->> (gen/sample __ 1000)
+                  ;; Almost never generates the same thing
+                  (distinct)
+                  (count)
+                  (< 975))
+             (->> (gen/sample __ 1000)
+                  ;; Every card sometimes shows up at the top
+                  (map first)
+                  (distinct)
+                  (count)
+                  (= 52))
+             (->> (gen/sample __ 1000)
+                  ;; Every card sometimes shows up at the bottom
+                  (map last)
+                  (distinct)
+                  (count)
+                  (= 52))]
+    :good-answers '[(gen/shuffle (range 1 53))
+                    ((fn self [xs]
+                       (if (empty? xs)
+                         (gen/return ())
+                         (gen/bind (gen/elements xs)
+                                   (fn [x]
+                                     (gen/fmap #(cons x %)
+                                               (self (remove #{x} xs)))))))
+                     (range 1 53))]
+    :bad-answers '[(gen/return (range 1 53))
+                   (gen/shuffle (range 52))
+                   (gen/shuffle (range 53))]}
+
    {:title "It's sort of like the matrix"
     :description "Create a generator of vectors of vectors of integers, where the inner vectors are all the same size."
     :tags ["combinators"]
@@ -416,7 +484,6 @@
                    (gen/return [[1 2 3] [4 5 6] [7 8 9]])
                    (gen/vector (gen/vector gen/int))]}
 
-   ;; TODO: will these tests allow a top-level such-that? (I hope not)
    {:title "Sets can't contain 42."
     :description "Create a generator of sets of integers that never contain 42."
     :tags ["combinators"]
@@ -433,10 +500,90 @@
                   (count)
                   (< 800))]
     ;; TODO: proper set generator
-    :good-answers '[(gen/fmap set (gen/list (gen/such-that #(not= % 42) gen/int)))]
+    :good-answers '[(gen/fmap set (gen/list (gen/such-that #(not= % 42) gen/int)))
+                    (gen/fmap #(disj (set %) 42)
+                              (gen/list gen/int))]
     :bad-answers '[(gen/return #{1 2 3 4})
+                   ;; oh dang...is there some other way to make this point?
+                   #_
                    (gen/such-that #(not (% 42))
-                                  (gen/set gen/int))]}])
+                                  (gen/fmap set (gen/list gen/int)))]}
+
+   {:title "Up and to the right"
+    :description "Create a generator of non-empty lists of strictly-increasing positive integers."
+    :tags ["combinators" "extra-credit"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? (fn [xs] (and (sequential? xs)
+                                        (seq xs)
+                                        (every? integer? xs)
+                                        (every? pos? xs)
+                                        (apply < xs)))))
+             (->> (gen/sample __ 1000)
+                  ;; Generates various lengths of lists
+                  (map count)
+                  (frequencies)
+                  (count)
+                  (< 10))
+             (->> (gen/sample __ 1000)
+                  ;; Generates a good variety of values
+                  (distinct)
+                  (count)
+                  (< 900))]
+    :good-answers '[(gen/fmap #(reductions + %) (gen/not-empty (gen/list gen/s-pos-int)))
+                    (gen/fmap (fn [xs]
+                                (map + (sort xs) (range)))
+                              (gen/not-empty (gen/list gen/s-pos-int)))]
+    :bad-answers '[(gen/return [1 2 3 4])
+                   (gen/fmap sort (gen/list gen/s-pos-int))]}
+
+   {:title "Turtles all the way down"
+    :description "Create a generator of lists of directions like <code>[:up :left :up :right :down :right]</code>, where each direction is a 90-degree turn from the previous."
+    :tags ["combinators" "extra-credit"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? sequential?))
+             (->> (gen/sample __ 1000)
+                  (some empty?))
+             (->> (gen/sample __ 1000)
+                  ;; only valid transitions
+                  (mapcat #(partition 2 1 %))
+                  (set)
+                  (= #{[:up :left] [:up :right]
+                       [:left :up] [:left :down]
+                       [:down :left] [:down :right]
+                       [:right :up] [:right :down]}))
+             (->> (gen/sample __ 1000)
+                  ;; Generates decent list lengths
+                  (map count)
+                  (distinct)
+                  (count)
+                  (< 20))
+             (->> (gen/sample __ 1000)
+                  ;; Each direction shows up as the initial
+                  (remove empty?)
+                  (map first)
+                  (set)
+                  (= #{:up :left :right :down}))]
+    :good-answers '[(gen/one-of
+                     [(gen/return ())
+                      (gen/fmap (fn [[init turn-dirs]]
+                                  (reduce (fn [ret new-dir]
+                                            (conj ret
+                                                  ({[:up :right] :right
+                                                    [:up :left] :left
+                                                    [:right :right] :down
+                                                    [:right :left] :up
+                                                    [:down :left] :right
+                                                    [:down :right] :left
+                                                    [:left :right] :up
+                                                    [:left :left] :down}
+                                                   [(peek ret) new-dir])))
+                                          [init]
+                                          turn-dirs))
+                                (gen/tuple (gen/elements [:up :left :right :down])
+                                           (gen/list (gen/elements [:left :right]))))])]
+    :bad-answers '[(gen/return [])
+                   (gen/return [:left])
+                   (gen/list [:up :down :left :right])]}])
 
 (defn read-source
   [filepath {:keys [line column]}]
@@ -458,6 +605,7 @@
              (clojure.string/join "\n"))))))
 
 (defn load-problems []
+  "Puts all the problems in the db."
   (do
     (insert! :seqs
              {:_id "problems"
@@ -486,7 +634,7 @@
    (fn [problem-id tests code-str]
      (:error (foreclojure.problems/run-code* problem-id code-str)))))
 
-(defn test-good-answers
+(defn test-example-answers
   []
 
   (doseq [{:keys [_id bad-answers good-answers tests title]}

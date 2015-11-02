@@ -289,6 +289,45 @@
                                  :height (gen/fmap double gen/ratio)
                                  :opinions #{})]}
 
+   {:title "Make sure the deck is completely shuffled"
+    :description "Create a generator of shuffled card decks, where a card is a number from 1 to 52 inclusive."
+    :tags ["collections"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? (fn [xs]
+                            (and (sequential? xs)
+                                 (= (range 1 53) (sort xs))))))
+             (->> (gen/sample __ 1000)
+                  ;; Almost never generates the same thing
+                  (distinct)
+                  (count)
+                  (< 975))
+             (->> (gen/sample __ 1000)
+                  ;; Every card sometimes shows up at the top
+                  (map first)
+                  (distinct)
+                  (count)
+                  (= 52))
+             (->> (gen/sample __ 1000)
+                  ;; Every card sometimes shows up at the bottom
+                  (map last)
+                  (distinct)
+                  (count)
+                  (= 52))]
+    :good-answers '[(gen/shuffle (range 1 53))
+                    ((fn self [xs]
+                       (if (empty? xs)
+                         (gen/return ())
+                         (gen/bind (gen/elements xs)
+                                   (fn [x]
+                                     (gen/fmap #(cons x %)
+                                               (self (remove #{x} xs)))))))
+                     (range 1 53))]
+    :bad-answers '[(gen/return (range 1 53))
+                   (gen/shuffle (range 52))
+                   (gen/shuffle (range 53))]}
+
+
+
    {:title "Do I really have to do this one?"
     :description "Create a generator of vectors of lists of pairs of maps from ints to ints and keywords, e.g. [([{2 3, 54 1} :heyo] [{} :what]) () ([{-1 1} :a-keyword])]"
     :tags ["collections" "extra-credit"]
@@ -406,43 +445,6 @@
                    (gen/such-that
                     (fn [[xs x]] (some #{x} xs))
                     (gen/tuple (gen/list gen/nat) gen/nat))]}
-
-   {:title "Make sure the deck is completely shuffled"
-    :description "Create a generator of shuffled card decks, where a card is a number from 1 to 52 inclusive."
-    :tags ["combinators"]
-    :tests '[(->> (gen/sample __ 1000)
-                  (every? (fn [xs]
-                            (and (sequential? xs)
-                                 (= (range 1 53) (sort xs))))))
-             (->> (gen/sample __ 1000)
-                  ;; Almost never generates the same thing
-                  (distinct)
-                  (count)
-                  (< 975))
-             (->> (gen/sample __ 1000)
-                  ;; Every card sometimes shows up at the top
-                  (map first)
-                  (distinct)
-                  (count)
-                  (= 52))
-             (->> (gen/sample __ 1000)
-                  ;; Every card sometimes shows up at the bottom
-                  (map last)
-                  (distinct)
-                  (count)
-                  (= 52))]
-    :good-answers '[(gen/shuffle (range 1 53))
-                    ((fn self [xs]
-                       (if (empty? xs)
-                         (gen/return ())
-                         (gen/bind (gen/elements xs)
-                                   (fn [x]
-                                     (gen/fmap #(cons x %)
-                                               (self (remove #{x} xs)))))))
-                     (range 1 53))]
-    :bad-answers '[(gen/return (range 1 53))
-                   (gen/shuffle (range 52))
-                   (gen/shuffle (range 53))]}
 
    {:title "It's sort of like the matrix"
     :description "Create a generator of vectors of vectors of integers, where the inner vectors are all the same size."

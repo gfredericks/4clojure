@@ -583,7 +583,35 @@
                                            (gen/list (gen/elements [:left :right]))))])]
     :bad-answers '[(gen/return [])
                    (gen/return [:left])
-                   (gen/list [:up :down :left :right])]}])
+                   (gen/list [:up :down :left :right])]}
+   {:title "One at a time please"
+    :description "Create a generator of lists of non-negative integers beginning with <code>0</code>, such as <code>(0 0 1 0 2 3 4 3 2)</code>, where the number <code>N</code> does not appear until <code>N-1</code> has appeared."
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? (fn [xs]
+                            (and (sequential? xs)
+                                 (seq xs)
+                                 (every? integer? xs)
+                                 (not-any? neg? xs)))))
+             (->> (gen/sample __ 1000)
+                  (every? (fn [xs]
+                            (let [xs' (distinct xs)]
+                              (= xs' (range (count xs')))))))
+             (->> (gen/sample __ 1000)
+                  ;; Generates a good variety of things
+                  (distinct)
+                  (count)
+                  (< 700))]
+    :good-answers '[(gen/bind gen/nat
+                              (partial
+                               (fn self [ret dec-size]
+                                 (if (zero? dec-size)
+                                   (gen/return ret)
+                                   (gen/bind (gen/choose 0 (->> ret (apply max) (inc)))
+                                             (fn [x]
+                                               (self (conj ret x) (dec dec-size))))))
+                               [0]))]
+    :bad-answers '[(gen/return [1 2 3 3 4])
+                   (gen/fmap sort (gen/list gen/nat))]}])
 
 (defn read-source
   [filepath {:keys [line column]}]

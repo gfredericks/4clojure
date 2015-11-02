@@ -450,43 +450,56 @@
              {:_id "problems"
               :seq (count the-problems)})
     (doseq [[prob id] (map vector the-problems (rest (range)))
-            :let [prob (-> prob
-                           (update :tests
-                                   (fn [tests]
-                                     (map (fn [test]
-                                            (read-source this-file
-                                                         (meta test)))
-                                          tests)))
-                           (update :possible-answers
-                                   (fn [tests]
-                                     (map (fn [test]
-                                            (if (symbol? test)
-                                              (pr-str test)
-                                              (read-source this-file
-                                                           (meta test))))
-                                          tests))))]]
+            :let [prob (reduce (fn [prob k]
+                                 (update prob k
+                                         (fn [forms]
+                                           (map (fn [form]
+                                                  (if (symbol? form)
+                                                    (pr-str form)
+                                                    (read-source this-file
+                                                                 (meta form))))
+                                                forms))))
+                               prob
+                               [:tests :good-answers :bad-answers])]]
       (insert! :problems
                (assoc prob
                       :_id id
                       :times-solved 0
                       :approved true)))))
 
-(defn solves?
-  [problem-id code-str]
-  (not (contains?
-        (foreclojure.problems/run-code problem-id code-str)
-        :error)))
+(defonce check-solution
+  ;; "Returns nil for success, or an error message"
+  (memoize
+   (fn [problem-id tests code-str]
+     (:error (foreclojure.problems/run-code* problem-id code-str)))))
 
-(defn test-possible-answers
+(defn test-good-answers
   []
 
-  (doseq [{:keys [_id possible-answers]}
-          (#'foreclojure.fake-mongo/records :problems)
-
-          code-str possible-answers]
-    (when-not (solves? _id code-str)
-      (println "CRAP" _id code-str)))
+  (doseq [{:keys [_id bad-answers good-answers tests title]}
+          (sort-by :_id
+                   (#'foreclojure.fake-mongo/records :problems))]
+    (doseq [code-str good-answers]
+      (when-let [error (check-solution _id tests code-str)]
+        (println "CRAP" _id code-str error)))
+    (doseq [code-str bad-answers]
+      (when-not (check-solution _id tests code-str)
+        (println "CRAP[ASSED]" _id code-str))))
   (println "Done."))
+
+;;
+;; Dev utils
+;;
+
+(defn reset-db
+  []
+  (.delete (java.io.File. "fake-mongo/data-0.edn"))
+  (alter-var-root #'foreclojure.fake-mongo/the-db
+                  (constantly (com.gfredericks.webscale/create
+                               #'foreclojure.fake-mongo/update-state
+                               {} "fake-mongo")))
+  (foreclojure.mongo/prepare-mongo))
+
 
 (comment
 
@@ -507,17 +520,5 @@
                (apply (juxt min max)))]
       [(avg 0 the-min) (avg the-max 1)]))
 
-  ;;
-  ;; Dev utils
-  ;;
-
-  (defn reset-db
-    []
-    (.delete (java.io.File. "fake-mongo/data-0.edn"))
-    (alter-var-root #'foreclojure.fake-mongo/the-db
-                    (constantly (com.gfredericks.webscale/create
-                                 #'foreclojure.fake-mongo/update-state
-                                 {} "fake-mongo")))
-    (foreclojure.mongo/prepare-mongo))
 
   )

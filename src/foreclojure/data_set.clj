@@ -589,6 +589,7 @@
                    (gen/list [:up :down :left :right])]}
    {:title "One at a time please"
     :description "Create a generator of lists of non-negative integers beginning with <code>0</code>, such as <code>(0 0 1 0 2 3 4 3 2)</code>, where the number <code>N</code> does not appear until <code>N-1</code> has appeared."
+    :tags ["combinators" "extra-credit"]
     :tests '[(->> (gen/sample __ 1000)
                   (every? (fn [xs]
                             (and (sequential? xs)

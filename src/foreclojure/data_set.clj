@@ -1,5 +1,6 @@
 (ns foreclojure.data-set
-  (:use [foreclojure.fake-mongo]))
+  (:use [foreclojure.fake-mongo])
+  (:require foreclojure.problems))
 
 (def this-file *file*)
 

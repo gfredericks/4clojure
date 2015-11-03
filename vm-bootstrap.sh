@@ -5,7 +5,10 @@
 
 # May as well run as root I guess.
 
-apt-get update && apt-get install -y openjdk-7-jre git wget
+# To bootstrap:
+# apt-get install wget && wget https://raw.githubusercontent.com/gfredericks/4clojure/test.check-generators/vm-bootstrap.sh && sh vm-bootstrap.sh
+
+apt-get update && apt-get install -y openjdk-7-jre git
 
 wget https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
 chmod +x lein

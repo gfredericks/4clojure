@@ -1,7 +1,8 @@
 (ns foreclojure.data-set
-  (:use [foreclojure.fake-mongo]))
+  (:use [foreclojure.fake-mongo])
+  (:require [clojure.java.io :as io]))
 
-(def this-file *file*)
+(def this-file (io/resource "foreclojure/data_set.clj"))
 
 ;;
 ;; Should the descriptions aim to actually introduce new concepts, or

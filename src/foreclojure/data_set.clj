@@ -1,6 +1,5 @@
 (ns foreclojure.data-set
-  (:use [foreclojure.fake-mongo])
-  (:require foreclojure.problems))
+  (:use [foreclojure.fake-mongo]))
 
 (def this-file *file*)
 
@@ -659,38 +658,39 @@
                       :times-solved 0
                       :approved true)))))
 
-(defonce check-solution
-  ;; "Returns nil for success, or an error message"
-  (memoize
-   (fn [problem-id tests code-str]
-     (:error (foreclojure.problems/run-code* problem-id code-str)))))
+(comment
+  (defonce check-solution
+    ;; "Returns nil for success, or an error message"
+    (memoize
+     (fn [problem-id tests code-str]
+       (:error (foreclojure.problems/run-code* problem-id code-str)))))
 
-(defn test-example-answers
-  []
+  (defn test-example-answers
+    []
 
-  (doseq [{:keys [_id bad-answers good-answers tests title]}
-          (sort-by :_id
-                   (#'foreclojure.fake-mongo/records :problems))]
-    (doseq [code-str good-answers]
-      (when-let [error (check-solution _id tests code-str)]
-        (println "CRAP" _id code-str error)))
-    (doseq [code-str bad-answers]
-      (when-not (check-solution _id tests code-str)
-        (println "CRAP[ASSED]" _id code-str))))
-  (println "Done."))
+    (doseq [{:keys [_id bad-answers good-answers tests title]}
+            (sort-by :_id
+                     (#'foreclojure.fake-mongo/records :problems))]
+      (doseq [code-str good-answers]
+        (when-let [error (check-solution _id tests code-str)]
+          (println "CRAP" _id code-str error)))
+      (doseq [code-str bad-answers]
+        (when-not (check-solution _id tests code-str)
+          (println "CRAP[ASSED]" _id code-str))))
+    (println "Done."))
 
-;;
-;; Dev utils
-;;
+  ;;
+  ;; Dev utils
+  ;;
 
-(defn reset-db
-  []
-  (.delete (java.io.File. "fake-mongo/data-0.edn"))
-  (alter-var-root #'foreclojure.fake-mongo/the-db
-                  (constantly (com.gfredericks.webscale/create
-                               #'foreclojure.fake-mongo/update-state
-                               {} "fake-mongo")))
-  (foreclojure.mongo/prepare-mongo))
+  (defn reset-db
+    []
+    (.delete (java.io.File. "fake-mongo/data-0.edn"))
+    (alter-var-root #'foreclojure.fake-mongo/the-db
+                    (constantly (com.gfredericks.webscale/create
+                                 #'foreclojure.fake-mongo/update-state
+                                 {} "fake-mongo")))
+    (foreclojure.mongo/prepare-mongo)))
 
 
 (comment

@@ -6,7 +6,7 @@
 # May as well run as root I guess.
 
 # To bootstrap:
-# apt-get install wget && wget https://raw.githubusercontent.com/gfredericks/4clojure/test.check-generators/vm-bootstrap.sh && sh vm-bootstrap.sh
+# apt-get install -y wget && wget https://raw.githubusercontent.com/gfredericks/4clojure/test.check-generators/vm-bootstrap.sh && sh vm-bootstrap.sh
 
 apt-get update && apt-get install -y openjdk-7-jre git
 

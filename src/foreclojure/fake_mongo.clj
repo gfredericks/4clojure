@@ -1,5 +1,6 @@
 (ns foreclojure.fake-mongo
-  (:require [com.gfredericks.webscale :as webscale]))
+  (:require [com.gfredericks.webscale :as webscale]
+            ring.middleware.session.store))
 
 (defn ^:private bad-get-uuids
   "Don't use this haha."

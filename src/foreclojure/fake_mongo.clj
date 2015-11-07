@@ -28,7 +28,7 @@
 
                    (and (map? v)
                         (= [:$nin] (keys v)))
-                   (let [xs (set (:$in v))]
+                   (let [xs (set (:$nin v))]
                      (fn [m] (not (contains? xs (get m k)))))
 
                    :elso

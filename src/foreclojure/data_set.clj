@@ -45,13 +45,19 @@
     :tests '[(->> (gen/sample __ 1000)
                   (every? integer?))
              (->> (gen/sample __ 1000)
+                  ;; Generates a mild variety of integers
                   (distinct)
                   (count)
                   (< 50))]
     :good-answers '[gen/nat
                     gen/int
                     gen/pos-int
-                    gen/s-pos-int]
+                    gen/s-pos-int
+                    gen/large-integer
+                    (gen/large-integer* {:min -60000 :max -59900})
+                    (gen/let [x (gen/double* {:min -1000000 :max 1000000
+                                              :infinite? false :NaN? false})]
+                      (long x))]
     :bad-answers '[(gen/return 42)
                    gen/boolean
                    gen/ratio]}
@@ -78,7 +84,7 @@
                    gen/keyword
                    (gen/vector gen/string-ascii)
                    (gen/return "blah")
-                   (gen/fmap str gen/nat)]}
+                   (gen/let [n gen/nat] (str n))]}
    {:title "Enumerationalization"
     :description "Create a generator of :foo, :bar, or :baz."
     :tags ["simple"]
@@ -282,12 +288,11 @@
              ]
     :good-answers '[(gen/hash-map :name gen/string
                                   :age gen/nat
-                                  ;; TODO: make a real double generator!
-                                  :height (gen/fmap double gen/ratio))]
+                                  :height gen/double)]
     :bad-answers '[(gen/return {:name "Gary" :age 45 :height 20.0})
                    (gen/hash-map :name gen/string
                                  :age gen/nat
-                                 :height (gen/fmap double gen/ratio)
+                                 :height gen/double
                                  :opinions #{})]}
 
    {:title "Make sure the deck is completely shuffled"
@@ -318,10 +323,9 @@
                     ((fn self [xs]
                        (if (empty? xs)
                          (gen/return ())
-                         (gen/bind (gen/elements xs)
-                                   (fn [x]
-                                     (gen/fmap #(cons x %)
-                                               (self (remove #{x} xs)))))))
+                         (gen/let [x (gen/elements xs)
+                                   shuf'd (self (remove #{x} xs))]
+                           (cons x shuf'd))))
                      (range 1 53))]
     :bad-answers '[(gen/return (range 1 53))
                    (gen/shuffle (range 52))
@@ -433,10 +437,9 @@
                   (distinct)
                   (count)
                   (< 600))]
-    :good-answers '[(gen/bind (gen/not-empty (gen/list gen/int))
-                              (fn [xs]
-                                (gen/tuple (gen/return xs)
-                                           (gen/elements xs))))]
+    :good-answers '[(gen/let [xs (gen/not-empty (gen/list gen/int))
+                              x (gen/elements xs)]
+                      [xs x])]
     :bad-answers '[(gen/return [[42] 42])
                    (gen/tuple (gen/list gen/nat) gen/nat)
                    (gen/bind (gen/list gen/int)
@@ -478,7 +481,9 @@
                   (distinct)
                   (count)
                   (< 50))]
-    :good-answers '[(gen/bind gen/nat
+    :good-answers '[(gen/let [len gen/nat]
+                      (gen/vector (gen/vector gen/large-integer len)))
+                    (gen/bind gen/nat
                               (fn [len]
                                 (gen/vector (gen/vector gen/int len))))]
     :bad-answers '[(gen/return [])
@@ -502,10 +507,11 @@
                   (distinct)
                   (count)
                   (< 800))]
-    ;; TODO: proper set generator
-    :good-answers '[(gen/fmap set (gen/list (gen/such-that #(not= % 42) gen/int)))
-                    (gen/fmap #(disj (set %) 42)
-                              (gen/list gen/int))]
+    :good-answers '[(gen/set (gen/such-that #(not= % 42) gen/int))
+                    (gen/let [xs (gen/set gen/int)]
+                      (disj xs 42))
+                    (gen/set (gen/one-of [(gen/large-integer* {:max 41})
+                                          (gen/large-integer* {:min 43})]))]
     :bad-answers '[(gen/return #{1 2 3 4})
                    ;; oh dang...is there some other way to make this point?
                    #_
@@ -535,7 +541,9 @@
     :good-answers '[(gen/fmap #(reductions + %) (gen/not-empty (gen/list gen/s-pos-int)))
                     (gen/fmap (fn [xs]
                                 (map + (sort xs) (range)))
-                              (gen/not-empty (gen/list gen/s-pos-int)))]
+                              (gen/not-empty (gen/list gen/s-pos-int)))
+                    (gen/let [xs (gen/not-empty (gen/list (gen/large-integer* {:min 1 :max 1000000000})))]
+                      (reductions + xs))]
     :bad-answers '[(gen/return [1 2 3 4])
                    (gen/fmap sort (gen/list gen/s-pos-int))]}
 
@@ -568,22 +576,22 @@
                   (= #{:up :left :right :down}))]
     :good-answers '[(gen/one-of
                      [(gen/return ())
-                      (gen/fmap (fn [[init turn-dirs]]
-                                  (reduce (fn [ret new-dir]
-                                            (conj ret
-                                                  ({[:up :right] :right
-                                                    [:up :left] :left
-                                                    [:right :right] :down
-                                                    [:right :left] :up
-                                                    [:down :left] :right
-                                                    [:down :right] :left
-                                                    [:left :right] :up
-                                                    [:left :left] :down}
-                                                   [(peek ret) new-dir])))
-                                          [init]
-                                          turn-dirs))
+                      (gen/let [[init turn-dirs]
                                 (gen/tuple (gen/elements [:up :left :right :down])
-                                           (gen/list (gen/elements [:left :right]))))])]
+                                           (gen/list (gen/elements [:left :right])))]
+                        (reduce (fn [ret new-dir]
+                                  (conj ret
+                                        ({[:up :right] :right
+                                          [:up :left] :left
+                                          [:right :right] :down
+                                          [:right :left] :up
+                                          [:down :left] :right
+                                          [:down :right] :left
+                                          [:left :right] :up
+                                          [:left :left] :down}
+                                         [(peek ret) new-dir])))
+                                [init]
+                                turn-dirs))])]
     :bad-answers '[(gen/return [])
                    (gen/return [:left])
                    (gen/list [:up :down :left :right])]}
@@ -605,15 +613,13 @@
                   (distinct)
                   (count)
                   (< 700))]
-    :good-answers '[(gen/bind gen/nat
-                              (partial
-                               (fn self [ret dec-size]
-                                 (if (zero? dec-size)
-                                   (gen/return ret)
-                                   (gen/bind (gen/choose 0 (->> ret (apply max) (inc)))
-                                             (fn [x]
-                                               (self (conj ret x) (dec dec-size))))))
-                               [0]))]
+    :good-answers '[(gen/let [x gen/nat]
+                      ((fn self [ret dec-size]
+                         (if (zero? dec-size)
+                           (gen/return ret)
+                           (gen/let [x (gen/choose 0 (->> ret (apply max) (inc)))]
+                             (self (conj ret x) (dec dec-size)))))
+                       [0] x))]
     :bad-answers '[(gen/return [1 2 3 3 4])
                    (gen/fmap sort (gen/list gen/nat))]}])
 

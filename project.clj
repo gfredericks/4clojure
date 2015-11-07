@@ -17,7 +17,7 @@
                  [org.apache.commons/commons-email "1.2"]
                  [org.clojure/data.xml "0.0.5"]
                  [com.gfredericks/webscale "0.1.0"]
-                 [org.clojure/test.check "0.8.2"]]
+                 [com.gfredericks.forks.org.clojure/test.check "0.9.0"]]
   :plugins [[lein-ring "0.7.1"]]
   :profiles {:dev {:dependencies [[midje "1.3.0" :exclusions [org.clojure/clojure]]]}}
   :checksum-deps true

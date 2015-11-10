@@ -126,28 +126,23 @@
     :tests '[(->> (gen/sample __ 1000)
                   (every? #(and (integer? %) (<= -111111111 % 111111111))))
              (let [xs (gen/sample __ 1000)]
-               ;; distributed evenly
-               (every? (fn [prime]
-                         (and (->> xs
-                                   (map #(mod % prime))
-                                   (distinct)
-                                   (count)
-                                   (= prime))
-                              (let [block-size (/ 222222223 prime)]
-                                (->> xs
-                                     (map #(-> %
-                                               (+ 111111111)
-                                               (/ block-size)
-                                               (int)))
-                                     (distinct)
-                                     (count)
-                                     (= prime)))))
-                       [7 11 13 17 23]))]
-    :good-answers '[(gen/choose -111111111 111111111)]
+               ;; distributed decently
+               (every? (fn [digit-count]
+                         (->> xs
+                              (map #(Math/abs %))
+                              (map str)
+                              (map count)
+                              (filter #{digit-count})
+                              (count)
+                              (<= 10)))
+                       (range 1 10)))]
+    :good-answers '[(gen/large-integer* {:min -111111111 :max 111111111})]
     :bad-answers '[(gen/return 42)
                    (gen/choose 0 222222222)
                    (gen/choose -111111111 11111111)
                    (gen/choose -111111111 1111111111)
+                   (gen/large-integer* {:min -11111111 :max 11111111})
+                   (gen/large-integer* {:min -111111111 :max 1111111111})
                    gen/int gen/nat gen/pos-int gen/s-pos-int]}
 
    ;;
@@ -617,7 +612,7 @@
                       ((fn self [ret dec-size]
                          (if (zero? dec-size)
                            (gen/return ret)
-                           (gen/let [x (gen/choose 0 (->> ret (apply max) (inc)))]
+                           (gen/let [x (gen/large-integer* {:min 0 :max (->> ret (apply max) (inc))})]
                              (self (conj ret x) (dec dec-size)))))
                        [0] x))]
     :bad-answers '[(gen/return [1 2 3 3 4])

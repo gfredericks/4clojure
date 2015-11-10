@@ -31,6 +31,11 @@
                    (let [xs (set (:$nin v))]
                      (fn [m] (not (contains? xs (get m k)))))
 
+                   (and (map? v)
+                        (= [:$ne] (keys v)))
+                   (let [x (:$ne v)]
+                     (fn [m] (not= x (get m k))))
+
                    :elso
                    (throw (ex-info "Unknown value type!" {:where-map where-map})))
              (throw (ex-info "WTF" {:where-map where-map}))))))
@@ -149,8 +154,8 @@
 (noops mongo! authenticate add-index!)
 
 (defn fetch
-  [table & {:keys [only where sort] :as opts}]
-  {:pre [(every? #{:only :where :sort} (keys opts))]}
+  [table & {:keys [only where sort limit] :as opts}]
+  {:pre [(every? #{:only :where :sort :limit} (keys opts))]}
   (cond->> (records table)
     where
     (filter (compile-where-map where))
@@ -161,7 +166,10 @@
     sort
     (sort-by (case sort
                {:_id 1} :_id
-               (throw (Exception. "WHAT SORT"))))))
+               (throw (Exception. "WHAT SORT"))))
+
+    limit
+    (take limit)))
 
 (defn fetch-one
   [& args]

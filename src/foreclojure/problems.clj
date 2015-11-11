@@ -230,6 +230,14 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
     (flash-msg url message)
     (flash-error url error)))
 
+(defn generate-sample [id code]
+  (flash-msg "I am a moose!"))
+
+(defn rest-generate-sample [id code]
+  (json/generate-string
+   {:msg "I am a moose"
+    :your-code code}))
+
 (let [light-img (image-builder {:red   ["red"   "test failed"]
                                 :green ["green" "test passed"]
                                 :blue  ["blue"  "test not run"]}
@@ -335,7 +343,12 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
          (render-golf-chart)]
         (hidden-field :id id)
         [:br]
-        [:button.large {:id "run-button" :type "submit"} "Run"]
+        [:button.large {:id "run-button" :type "submit" :name "run"} "Run"]
+        [:button.large {:id "sample-button" :type "submit" :name "sample"} "Sample"]
+        (when-let [the-sample (session/flash-get :sample)]
+          [:div.sample
+           [:pre.test
+            (clojure.pprint/pprint the-sample)]])
         (when-not approved
           [:span [:button.large {:id "reject-button"} "Reject"]
            [:button.large {:id "edit-button"} "Edit"]
@@ -621,6 +634,9 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
 (defn total-solved-count []
   (html (:total @solved-stats)))
 
+(defonce the-log (atom []))
+(defn log [x] (swap! the-log conj x))
+
 (defroutes problems-routes
   (GET "/problems" [] (problem-list-page))
   (GET "/problems/solved" [] (total-solved-count))
@@ -643,11 +659,15 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
     (reject-problem (Integer. id) "We didn't like your problem."))
   (GET "/problem/solutions/:id" [id]
     (show-solutions id))
-  (POST "/problem/:id" [id code]
+  (POST "/problem/:id" [id code :as req]
     (static-run-code (Integer. id) (trim-code code)))
+  (POST "/problem/:id/sample" [id code]
+    (generate-sample (Integer. id) (trim-code code)))
   (POST "/rest/problem/:id" [id code]
     {:headers {"Content-Type" "application/json"}}
     (rest-run-code (Integer. id) (trim-code code)))
+  (POST "/rest/problem/:id/sample" [id code]
+    (rest-generate-sample (Integer. id) (trim-code code)))
   (GET "/problems/rss" [] (create-feed
                            "4Clojure: Recent Problems"
                            "http://4clojure.com/problems"

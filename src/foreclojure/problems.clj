@@ -238,7 +238,7 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
           devnull (java.io.StringWriter.)
           the-sample (sb code-with-sample
                          sb-tester
-                         {#'*out* *out*
+                         {#'*out* devnull
                           #'*err* devnull
                           #'*ns* generators-namespace})]
       {:res (with-out-str (clojure.pprint/pprint the-sample))})
@@ -648,9 +648,6 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
 (defn total-solved-count []
   (html (:total @solved-stats)))
 
-(defonce the-log (atom []))
-(defn log [x] (swap! the-log conj x))
-
 (defroutes problems-routes
   (GET "/problems" [] (problem-list-page))
   (GET "/problems/solved" [] (total-solved-count))
@@ -674,14 +671,12 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
   (GET "/problem/solutions/:id" [id]
     (show-solutions id))
   (POST "/problem/:id" [id code sample :as req]
-        (log req)
         (if sample
           (do (generate-sample (trim-code code))
               {:status 302
                :headers {"Location" (str (:uri req) "#sample")}
                :body ""})
-          (doto (static-run-code (Integer. id) (trim-code code))
-            (log))))
+          (static-run-code (Integer. id) (trim-code code))))
   (POST "/problem/:id/sample" [id code]
     (generate-sample (trim-code code)))
   (POST "/rest/problem/:id" [id code]

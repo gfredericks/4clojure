@@ -41,7 +41,7 @@
   (-> (routes (GET "/" [] (welcome-page))
               login-routes
               register-routes
-              #'problems-routes
+              problems-routes
               users-routes
               static-routes
               social-routes

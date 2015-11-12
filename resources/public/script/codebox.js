@@ -15,7 +15,7 @@ var CodeBox = {
     this.disableJavascript = $('#disable-javascript-codebox').length > 0
                                 || $.browser.mobile;
     this.element = $("#code-box");
-    this.submitButtons = $("#run-button, #submission-button");
+    this.submitButtons = $("#run-button, #submission-button, #sample-button");
     var isSettingsPage = $('#settings #code-box').length > 0;
 
     if(!this.disableJavascript && this.submitButtons.length > 0 || isSettingsPage) {
@@ -23,6 +23,7 @@ var CodeBox = {
     }
 
     $("#run-button").live("click", $.proxy(this.run, this));
+    $("#sample-button").live("click", $.proxy(this.sample, this));
     $("#submission-button").live("click", $.proxy(this.submitProblem, this));
   },
 
@@ -75,6 +76,31 @@ var CodeBox = {
       timeout: 20000, // default clojail timeout is 10000
       beforeSend: $.proxy(this.beforeSendCallback, this),
       success: $.proxy(this.successCallback, this),
+      error: function(data, str, error) {
+        $("#message-text").text("An Error occured: "+error);
+      }});
+  },
+
+  sample: function(e) {
+    e.preventDefault();
+
+    var text = this.getCode(),
+      id = $('#id').attr("value");
+
+    this.images = $(".testcases").find("img"),
+
+    $.ajax({
+      type: "POST",
+      url: "/rest/problem/"+id+"/sample",
+      dataType: "json",
+      data: { id: id, code: text, },
+      timeout: 20000, // default clojail timeout is 10000
+      // beforeSend: $.proxy(this.beforeSendCallback, this),
+      // success: $.proxy(this.successCallback, this),
+      success: function(arg){
+        pre = $("<pre />").text(arg.res || arg.error);
+        $("div#sample").empty().append(pre);
+      },
       error: function(data, str, error) {
         $("#message-text").text("An Error occured: "+error);
       }});

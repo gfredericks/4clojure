@@ -230,6 +230,29 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
     (flash-msg url message)
     (flash-error url error)))
 
+(defn generate-sample* [code]
+  (try
+    (let [form (first (read-string-safely code))
+          code-with-sample `(doall (gen/sample ~form))
+          sb-tester (get-tester ())
+          devnull (java.io.StringWriter.)
+          the-sample (sb code-with-sample
+                         sb-tester
+                         {#'*out* devnull
+                          #'*err* devnull
+                          #'*ns* generators-namespace})]
+      {:res (with-out-str (clojure.pprint/pprint the-sample))})
+    (catch Throwable t
+      {:error (.getMessage t)})))
+
+(defn generate-sample [code]
+  (session/flash-put! :code code)
+  (let [{:keys [res error]} (generate-sample* code)]
+    (session/flash-put! :sample (or res error))))
+
+(defn rest-generate-sample [code]
+  (json/generate-string (generate-sample* code)))
+
 (let [light-img (image-builder {:red   ["red"   "test failed"]
                                 :green ["green" "test passed"]
                                 :blue  ["blue"  "test not run"]}
@@ -335,7 +358,11 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
          (render-golf-chart)]
         (hidden-field :id id)
         [:br]
-        [:button.large {:id "run-button" :type "submit"} "Run"]
+        [:button.large {:id "run-button" :type "submit" :name "run"} "Run"]
+        [:button.large {:id "sample-button" :type "submit" :name "sample"} "Sample"]
+        [:div#sample
+         (when-let [the-sample (session/flash-get :sample)]
+           [:pre the-sample])]
         (when-not approved
           [:span [:button.large {:id "reject-button"} "Reject"]
            [:button.large {:id "edit-button"} "Edit"]
@@ -643,11 +670,20 @@ Return a map, {:message, :error, :url, :num-tests-passed}."
     (reject-problem (Integer. id) "We didn't like your problem."))
   (GET "/problem/solutions/:id" [id]
     (show-solutions id))
-  (POST "/problem/:id" [id code]
-    (static-run-code (Integer. id) (trim-code code)))
+  (POST "/problem/:id" [id code sample :as req]
+        (if sample
+          (do (generate-sample (trim-code code))
+              {:status 302
+               :headers {"Location" (str (:uri req) "#sample")}
+               :body ""})
+          (static-run-code (Integer. id) (trim-code code))))
+  (POST "/problem/:id/sample" [id code]
+    (generate-sample (trim-code code)))
   (POST "/rest/problem/:id" [id code]
     {:headers {"Content-Type" "application/json"}}
     (rest-run-code (Integer. id) (trim-code code)))
+  (POST "/rest/problem/:id/sample" [id code]
+    (rest-generate-sample (trim-code code)))
   (GET "/problems/rss" [] (create-feed
                            "4Clojure: Recent Problems"
                            "http://4clojure.com/problems"

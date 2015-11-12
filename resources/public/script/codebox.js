@@ -98,7 +98,8 @@ var CodeBox = {
       // beforeSend: $.proxy(this.beforeSendCallback, this),
       // success: $.proxy(this.successCallback, this),
       success: function(arg){
-        console.log("YO", arguments);
+        pre = $("<pre />").text(arg.res || arg.error);
+        $("div#sample").empty().append(pre);
       },
       error: function(data, str, error) {
         $("#message-text").text("An Error occured: "+error);

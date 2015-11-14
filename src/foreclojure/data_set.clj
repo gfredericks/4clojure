@@ -104,46 +104,7 @@
                    (gen/elements [:foo :bar :baz :booze])
                    (gen/return :foo)
                    gen/keyword]}
-   {:title "Three-valued logic"
-    :description "Create a generator that generates booleans and nil."
-    :tags ["simple" "extra-credit"]
-    :tests '[(->> (gen/sample __ 1000)
-                  (set)
-                  (= #{true false nil}))
-             (->> (gen/sample __ 1000)
-                  ;; Decent distribution
-                  (frequencies)
-                  (vals)
-                  (every? #(< 200 % 600)))]
-    :good-answers '[(gen/elements [true false nil])
-                    (gen/one-of [gen/boolean (gen/return nil)])]
-    :bad-answers '[(gen/return true)
-                   (gen/return nil)
-                   (gen/elements [true false nil 42])]}
-   {:title "Goes up to eleven"
-    :description "Create a generator that generates the full range of integers between -111111111 and 111111111, inclusive."
-    :tags ["simple" "extra-credit"]
-    :tests '[(->> (gen/sample __ 1000)
-                  (every? #(and (integer? %) (<= -111111111 % 111111111))))
-             (let [xs (gen/sample __ 1000)]
-               ;; distributed decently
-               (every? (fn [digit-count]
-                         (->> xs
-                              (map #(Math/abs %))
-                              (map str)
-                              (map count)
-                              (filter #{digit-count})
-                              (count)
-                              (<= 10)))
-                       (range 1 10)))]
-    :good-answers '[(gen/large-integer* {:min -111111111 :max 111111111})]
-    :bad-answers '[(gen/return 42)
-                   (gen/choose 0 222222222)
-                   (gen/choose -111111111 11111111)
-                   (gen/choose -111111111 1111111111)
-                   (gen/large-integer* {:min -11111111 :max 11111111})
-                   (gen/large-integer* {:min -111111111 :max 1111111111})
-                   gen/int gen/nat gen/pos-int gen/s-pos-int]}
+
 
    ;;
    ;; Data structure generators
@@ -336,31 +297,6 @@
 
 
 
-   {:title "Do I really have to do this one?"
-    :description "Create a generator of vectors of lists of pairs of maps from ints to ints and keywords, e.g. [([{2 3, 54 1} :heyo] [{} :what]) () ([{-1 1} :a-keyword])]"
-    :tags ["collections" "extra-credit"]
-    :tests '[(->> (gen/sample (gen/scale #(min % 15) __) 100)
-                  (every? vector?))
-             (->> (gen/sample (gen/scale #(min % 15) __) 100)
-                  (apply concat)
-                  (every? seq?))
-             (->> (gen/sample (gen/scale #(min % 15) __) 100)
-                  (apply concat)
-                  (apply concat)
-                  (map first)
-                  (every? map?))
-             (->> (gen/sample (gen/scale #(min % 15) __) 100)
-                  ;; generates a variety of maps & keywords
-                  (tree-seq sequential? identity)
-                  (distinct)
-                  (count)
-                  (< 100))]
-    :good-answers '[(gen/vector (gen/list (gen/tuple (gen/map gen/int gen/int)
-                                                     gen/keyword)))]
-    :bad-answers '[(gen/return [([{2 3, 54 1} :heyo] [{} :what])
-                                ()
-                                ([{-1 1} :a-keyword])])]}
-
    ;;
    ;; Combinator generators
    ;;
@@ -520,6 +456,78 @@
                    #_
                    (gen/such-that #(not (% 42))
                                   (gen/fmap set (gen/list gen/int)))]}
+
+
+
+   ;;
+   ;; Extra Credit
+   ;;
+
+   {:title "Three-valued logic"
+    :description "Create a generator that generates booleans and nil."
+    :tags ["simple" "extra-credit"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (set)
+                  (= #{true false nil}))
+             (->> (gen/sample __ 1000)
+                  ;; Decent distribution
+                  (frequencies)
+                  (vals)
+                  (every? #(< 200 % 600)))]
+    :good-answers '[(gen/elements [true false nil])
+                    (gen/one-of [gen/boolean (gen/return nil)])]
+    :bad-answers '[(gen/return true)
+                   (gen/return nil)
+                   (gen/elements [true false nil 42])]}
+   {:title "Goes up to eleven"
+    :description "Create a generator that generates the full range of integers between -111111111 and 111111111, inclusive."
+    :tags ["simple" "extra-credit"]
+    :tests '[(->> (gen/sample __ 1000)
+                  (every? #(and (integer? %) (<= -111111111 % 111111111))))
+             (let [xs (gen/sample __ 1000)]
+               ;; distributed decently
+               (every? (fn [digit-count]
+                         (->> xs
+                              (map #(Math/abs %))
+                              (map str)
+                              (map count)
+                              (filter #{digit-count})
+                              (count)
+                              (<= 10)))
+                       (range 1 10)))]
+    :good-answers '[(gen/large-integer* {:min -111111111 :max 111111111})]
+    :bad-answers '[(gen/return 42)
+                   (gen/choose 0 222222222)
+                   (gen/choose -111111111 11111111)
+                   (gen/choose -111111111 1111111111)
+                   (gen/large-integer* {:min -11111111 :max 11111111})
+                   (gen/large-integer* {:min -111111111 :max 1111111111})
+                   gen/int gen/nat gen/pos-int gen/s-pos-int]}
+
+   {:title "Do I really have to do this one?"
+    :description "Create a generator of vectors of lists of pairs of maps from ints to ints and keywords, e.g. [([{2 3, 54 1} :heyo] [{} :what]) () ([{-1 1} :a-keyword])]"
+    :tags ["collections" "extra-credit"]
+    :tests '[(->> (gen/sample (gen/scale #(min % 15) __) 100)
+                  (every? vector?))
+             (->> (gen/sample (gen/scale #(min % 15) __) 100)
+                  (apply concat)
+                  (every? seq?))
+             (->> (gen/sample (gen/scale #(min % 15) __) 100)
+                  (apply concat)
+                  (apply concat)
+                  (map first)
+                  (every? map?))
+             (->> (gen/sample (gen/scale #(min % 15) __) 100)
+                  ;; generates a variety of maps & keywords
+                  (tree-seq sequential? identity)
+                  (distinct)
+                  (count)
+                  (< 100))]
+    :good-answers '[(gen/vector (gen/list (gen/tuple (gen/map gen/int gen/int)
+                                                     gen/keyword)))]
+    :bad-answers '[(gen/return [([{2 3, 54 1} :heyo] [{} :what])
+                                ()
+                                ([{-1 1} :a-keyword])])]}
 
    {:title "Up and to the right"
     :description "Create a generator of non-empty lists of strictly-increasing positive integers."

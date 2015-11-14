@@ -197,7 +197,7 @@
                    (gen/return (repeat 5 true))]}
 
    {:title "A list is a fixed-length heterogeneous collection"
-    :description "Create a generator of pairs of booleans and integers, e.g. <code>[true 42]</code>."
+    :description "Create a generator of pairs of booleans and integers, e.g. <code>[true 408293]</code>. The integers should be generated from a large range."
     :tags ["collections"]
     :tests '[(->> (gen/sample __ 1000)
                   (every? #(and (vector? %)
@@ -212,11 +212,19 @@
                   ;; generates a lot of different values
                   (distinct)
                   (count)
-                  (< 200))
+                  (< 500))
              ;; TODO: statsy tests
              ]
-    :good-answers '[(gen/tuple gen/boolean gen/int)]
-    :bad-answers '[(gen/tuple gen/boolean)
+    :good-answers '[(gen/tuple gen/boolean gen/large-integer)
+                    (gen/tuple gen/boolean (gen/large-integer*
+                                            {:min -3 :max 110000}))
+                    (gen/tuple gen/boolean (gen/scale #(* % 1000) gen/nat))
+                    (gen/let [b gen/boolean
+                              x gen/large-integer]
+                      [b x])]
+    :bad-answers '[(gen/tuple gen/boolean gen/nat)
+                   (gen/tuple gen/boolean gen/int)
+                   (gen/tuple gen/boolean)
                    (gen/vector (gen/one-of gen/boolean gen/int) 2)
                    (gen/tuple gen/boolean gen/int gen/int)
                    (gen/return [true 42])]}
